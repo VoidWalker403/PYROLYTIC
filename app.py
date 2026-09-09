@@ -157,3 +157,7 @@ render_paper_details()
 
 st.divider()
 render_analytics()
+
+from import_preview import render as render_import_preview
+st.divider()
+render_import_preview()

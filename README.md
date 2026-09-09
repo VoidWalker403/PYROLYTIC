@@ -43,6 +43,7 @@ Mode in the sidebar to query the local pipeline.
 - `literature_browser.py`: provides the filterable Streamlit literature browser and provenance inspector.
 - `analytics.py`: renders yield and confidence charts from the SQLite records.
 - `paper_details.py`: source links, full experiment records, and editable page/table/extraction provenance after login.
+- `import_preview.py`: review a CSV upload before explicitly saving it to the local database.
 - Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
@@ -67,6 +68,14 @@ for current row positions. Indistinguishable duplicate rows are rejected: distin
 real replicate runs in their notes. Invalid input is rejected before records are changed.
 Existing databases gain content identities on the next import without changing record IDs.
 Concurrent changes to provenance are rejected; reload the page before retrying.
+
+Use **Import experiments** after signing in to upload a UTF-8 CSV (up to 5 MB).
+The preview shows new, matching, and retained experiments plus paper title changes,
+without writing to the database. Review the tables, acknowledge the changes, then
+select **Save import to local database**. If another session changes the data, refresh
+the preview and review it again. Invalid or empty CSVs cannot be saved.
+Importing does not modify the tracked CSV or rebuild ChromaDB. Its existing ingestion
+command still reads the tracked CSV, so uploaded records are not yet included in chat retrieval.
 
 ## Current limitations
 

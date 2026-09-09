@@ -8,7 +8,7 @@ import hashlib
 import json
 import math
 import sqlite3
-from contextlib import closing
+from contextlib import closing, nullcontext
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -111,16 +111,16 @@ def _text(value: str | None) -> str | None:
     return value or None
 
 
-def import_csv(csv_path: str | Path, database_path: str | Path = DEFAULT_DATABASE) -> tuple[int, int]:
-    """Merge a CSV snapshot by content; keep omitted records and annotations.
-
-    Changes to imported experiment content create new records. We deliberately
-    do not guess which old experiment a corrected measurement should replace.
-    """
+def parse_csv(csv_path):
+    """Validate a path or text stream using the same rules for preview and save."""
     prepared = []
     seen = set()
-    with Path(csv_path).open(newline="", encoding="utf-8-sig") as source:
+    source_context = (nullcontext(csv_path) if hasattr(csv_path, "read") else
+                      Path(csv_path).open(newline="", encoding="utf-8-sig"))
+    with source_context as source:
         reader = csv.DictReader(source)
+        if len(reader.fieldnames or []) != len(set(reader.fieldnames or [])):
+            raise ValueError("Duplicate CSV column names are not allowed.")
         required = {"source_doi", "source_title", "plastic_type"}
         missing = required - set(reader.fieldnames or ())
         if missing:
@@ -141,11 +141,62 @@ def import_csv(csv_path: str | Path, database_path: str | Path = DEFAULT_DATABAS
                 prepared.append((source_row, doi, title, values, key))
             except ValueError as error:
                 raise ValueError(f"Row {source_row}: {error}") from error
+    if not prepared:
+        raise ValueError("The CSV contains no experiments.")
+    return prepared
+
+
+def _snapshot(connection):
+    papers = [dict(row) for row in connection.execute("SELECT * FROM papers ORDER BY id")]
+    records = [dict(row) for row in connection.execute("SELECT * FROM experiments ORDER BY id")]
+    state = hashlib.sha256(json.dumps([papers, records], sort_keys=True).encode()).hexdigest()
+    return papers, records, state
+
+
+def preview_csv(csv_path, database_path=DEFAULT_DATABASE):
+    """Read-only comparison. Returns a state token for a later guarded save."""
+    prepared = parse_csv(csv_path)
+    uri = Path(database_path).resolve().as_uri() + "?mode=ro"
+    with closing(sqlite3.connect(uri, uri=True)) as connection:
+        connection.row_factory = sqlite3.Row
+        connection.execute("BEGIN")
+        papers, records, state = _snapshot(connection)
+    by_key = {row["import_key"]: row for row in records}
+    by_paper = {row["id"]: row for row in papers}
+    incoming = {row[4] for row in prepared}
+    groups = {"new": [], "matching": [], "retained": []}
+    for source_row, doi, title, values, key in prepared:
+        group = "matching" if key in by_key else "new"
+        item = {"Experiment ID": by_key[key]["id"] if key in by_key else None,
+                "CSV row": source_row, "Paper": title, "DOI": doi}
+        item.update({column: value for (_, column, _), value in zip(IMPORT_FIELDS, values)})
+        groups[group].append(item)
+    for row in records:
+        if row["import_key"] not in incoming:
+            groups["retained"].append({"Experiment ID": row["id"],
+                "Paper": by_paper[row["paper_id"]]["title"],
+                "DOI": by_paper[row["paper_id"]]["doi"],
+                **{column: row[column] for _, column, _ in IMPORT_FIELDS}})
+    final_titles = {doi: title for _, doi, title, _, _ in prepared}
+    groups["title_changes"] = [{"DOI": paper["doi"], "Current title": paper["title"],
+                                "New title": final_titles[paper["doi"]]}
+                               for paper in papers if paper["doi"] in final_titles
+                               and paper["title"] != final_titles[paper["doi"]]]
+    groups["state"] = state
+    return groups
+
+
+def import_csv(csv_path, database_path: str | Path = DEFAULT_DATABASE,
+               *, expected_state=None) -> tuple[int, int]:
+    """Merge by content, retaining omitted records; optionally require a reviewed state."""
+    prepared = parse_csv(csv_path)
     initialize(database_path)
     columns = ", ".join(column for _, column, _ in IMPORT_FIELDS)
     placeholders = ", ".join("?" for _ in range(len(IMPORT_FIELDS) + 3))
     with closing(connect(database_path)) as connection, connection:
         connection.execute("BEGIN IMMEDIATE")
+        if expected_state is not None and _snapshot(connection)[2] != expected_state:
+            raise ValueError("The database changed since this preview. Refresh the preview before saving.")
         # Release old row positions before assigning the new snapshot's positions.
         # Omitted records remain available, but no longer claim a current CSV row.
         connection.execute("UPDATE experiments SET source_row=NULL")

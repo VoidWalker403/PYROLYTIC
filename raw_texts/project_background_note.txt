@@ -1,0 +1,119 @@
+PYROLYTIC PROJECT BACKGROUND NOTE — GENERAL DOMAIN KNOWLEDGE
+(This is a project-authored reference note, not extracted from a specific paper. It exists to
+help the chatbot answer conceptual/definitional questions alongside the literature-derived data
+points. Cite this as "[SOURCE: project-background-note]" when referenced.)
+
+=== PYROLYSIS FUNDAMENTALS ===
+
+Pyrolysis is the thermal decomposition of a material in the absence of oxygen. For waste
+plastic, heating breaks long polymer chains into smaller molecules, producing three main
+product streams: oil (condensable liquid hydrocarbons), gas (non-condensable hydrocarbons like
+methane, ethylene, propylene), and char (solid carbon residue and inorganic residue).
+
+Temperature effect: at lower temperatures (300-450C), primary cracking dominates, producing
+mostly larger liquid-range molecules (higher oil yield). At higher temperatures (550C+),
+secondary cracking becomes significant — larger oil molecules further break down into smaller
+gas molecules, so oil yield typically peaks at a moderate temperature and declines above it,
+while gas yield keeps rising with temperature.
+
+Heating rate effect: slow heating rates give molecules more time to undergo controlled primary
+cracking reactions, often favoring liquid oil yield. Fast heating rates can favor different
+reaction pathways and gas formation, though the exact effect is reactor- and plastic-specific
+(this project's own dataset shows this varies significantly by feedstock).
+
+Residence time: longer residence time at pyrolysis temperature allows more secondary cracking
+of vapors before they exit the reactor and condense, generally shifting yield from oil toward
+gas.
+
+=== REACTOR TYPES ===
+
+Batch reactor: feedstock is loaded once, heated through a full temperature program, then
+unloaded. Simple, common in lab-scale studies, but not continuous (not directly suited to
+industrial throughput without modification).
+
+Semi-batch reactor: similar to batch, but may have continuous removal of gas/vapor products
+while solid feedstock remains batch-loaded.
+
+Fixed-bed reactor: feedstock sits in a stationary bed while heat and/or gas flows through it.
+Common for both lab-scale and some industrial designs.
+
+Fluidized-bed reactor: feedstock particles are suspended and mixed by an upward gas flow,
+giving very good heat transfer and temperature uniformity. Preferred for larger-scale/
+industrial continuous operation due to consistent product quality, though it has higher
+capital cost and complexity than simpler batch designs.
+
+Continuous/pilot-scale reactors: designed for ongoing feedstock input and product output
+(rather than one batch at a time), necessary for realistic industrial throughput (e.g. the
+5 kg/h and 5 kg feedstock pilot-scale sources in this project's dataset).
+
+=== CATALYSTS IN PLASTIC PYROLYSIS ===
+
+Catalysts are used to lower the required reaction temperature, improve selectivity toward
+desired products (e.g. more oil, less gas), or upgrade oil quality (e.g. more valuable
+aromatic compounds).
+
+Zeolites (e.g. ZSM-5, HMOR, HUSY): microporous aluminosilicate catalysts with strong acid
+sites; widely studied for plastic pyrolysis because they can crack larger hydrocarbons
+selectively and produce more valuable, narrower product ranges. Different zeolite types and
+pore structures give different product selectivity.
+
+Natural minerals (e.g. kaolin, natural silica/sand): lower-cost alternatives to synthetic
+zeolites, generally milder catalytic effect, but attractive for economic reasons at scale.
+
+Catalyst-to-plastic ratio: the mass ratio of catalyst to feedstock is a key operating variable
+— too little catalyst gives minimal effect, too much increases cost without proportional
+yield benefit; most studies test a range (e.g. 1:8 to 1:1 in this project's dataset) to find
+an economic optimum.
+
+=== TECHNO-ECONOMIC TERMS (relevant to this project's economics module) ===
+
+CAPEX (Capital Expenditure): the upfront cost to build a plant — equipment, construction,
+installation. Usually reported per unit of processing capacity (e.g. $/tonne-year).
+
+OPEX (Operating Expenditure): the ongoing annual cost to run the plant — labor, maintenance,
+utilities, insurance. Usually reported per tonne processed or per year.
+
+NPV (Net Present Value): the sum of all future cash flows from a project, discounted back to
+today's value, minus the initial investment. A positive NPV means the project is expected to
+be profitable in present-value terms; the higher the NPV, the more value the project creates.
+
+IRR (Internal Rate of Return): the discount rate at which a project's NPV equals zero — in
+plain terms, the effective annual percentage return the investment generates. Compared against
+a company's required rate of return (hurdle rate) to judge if a project is worth pursuing.
+
+Payback period: the time required for cumulative cash flow to recover the initial investment.
+Shorter payback generally means lower risk, though it doesn't account for profitability after
+that point the way NPV does.
+
+Sensitivity analysis: testing how much a project's financial outcome (e.g. NPV) changes when
+key assumptions (e.g. product price, feedstock cost) are varied — used to identify which
+assumptions the investment decision is most vulnerable to.
+
+=== DATA SCIENCE / MODELING TERMS (relevant to this project's methodology) ===
+
+R² (R-squared): a statistic between 0 and 1 (can be negative for a poorly-fit model) showing
+how much of the variation in the target variable a model explains. Higher is generally better,
+but a high R² on training data alone can be misleading (overfitting) — this project uses
+cross-validation specifically to guard against that.
+
+Cross-validation: a technique where a dataset is split into multiple parts, and a model is
+trained on some parts and tested on the held-out part, repeated across different splits. This
+gives a more honest estimate of how a model will perform on new, unseen data than testing on
+the same data it was trained on.
+
+Leave-One-Out Cross-Validation (LOOCV): an extreme form of cross-validation where each single
+data point is held out as the test set once, and the model is trained on all remaining points.
+Used in this project for very small datasets (e.g. the 16-row PP subset) where standard
+k-fold cross-validation would leave too few points per fold.
+
+Confounding variable: a variable that correlates with both the predictor and the outcome in a
+way that creates a misleading appearance of a relationship. This project specifically
+identified and diagnosed a confound where a model appeared to predict yield well, but was
+actually partly learning "which research paper the data came from" rather than genuine
+chemistry — documented in detail in this project's model card.
+
+Box-Behnken Design / Response Surface Methodology (RSM): a structured statistical experimental
+design that tests combinations of factors (e.g. temperature, time, catalyst ratio) at three
+levels each, without needing to test every possible combination, in order to efficiently map
+out how those factors affect an outcome (like oil yield) including curved (non-linear)
+relationships. Several of the primary data sources in this project's dataset used this design.

@@ -1,0 +1,44 @@
+.streamlit/secrets.toml
+__pycache__/
+.pytest_cache/
+chroma_db/
+
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+secrets.toml
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+*service-account*.json
+
+# Local environments, caches, and generated files
+.venv/
+venv/
+env/
+*.py[cod]
+.ipynb_checkpoints/
+.cache/
+*.log
+*.sqlite*
+*.db
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Personal editor/agent settings
+.vscode/
+.idea/
+.codex/
+.agents/
+.DS_Store
+Thumbs.db
+
+# Downloaded/private source material; retain the project-authored note
+raw_texts/*
+!raw_texts/project_background_note.txt

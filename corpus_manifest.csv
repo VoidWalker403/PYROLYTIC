@@ -1,0 +1,38 @@
+source_title,source_doi,n_data_rows,plastic_types,avg_confidence
+Pyrolysis of Recycled LLDPE/LDPE Polymer Blend: Optimization of Process Parameters for High Yield of Wax,10.3390/recycling11030044,45,LDPE,1.0
+"Effect of Feed Mass, Reactor Temperature, and Time on the Yield of Waste Polypropylene Pyrolysis Oil Produced via a Fixed-Bed Reactor",10.3390/polym16101302,16,PP,1.0
+In Vitro and In Silico Evaluation of the Pyrolysis of Polyethylene and Polypropylene Environmental Waste,10.3390/polym17222968,15,"HDPE,PP",1.0
+Recent Trends in the Pyrolysis of Non-Degradable Waste Plastics (secondary citation of Sogancioglu et al.),https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/open.202100184,10,"HDPE,LDPE",0.6
+Effects of Heating Rate and Temperature on the Yield of Thermal Pyrolysis of a Random Waste Plastic Mixture (citing Papuga et al. 2016),10.2298/TSCI141113154P,6,mixed,1.0
+Catalytic pyrolysis of waste polypropylene using low-cost natural catalysts,10.1038/s41598-023-37769-8,5,PP,1.0
+Recent Trends in the Pyrolysis of Non-Degradable Waste Plastics (secondary citation of ref [81]),https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/open.202100184,4,"HDPE,LDPE,PP,mixed",0.6
+An experimental analysis of diesel fuel produced from HDPE waste using thermal and catalytic pyrolysis with passive heat pipe cooling system,https://www.sciencedirect.com/science/article/abs/pii/S2451904921000792,3,HDPE,1.0
+Catalytic pyrolysis of plastic wastes with two different types of catalysts: ZSM-5 zeolite and Red Mud,https://www.researchgate.net/publication/229127526,3,"HDPE,LDPE,PP",1.0
+Kinetic study of pyrolysis of high-density polyethylene (HDPE) waste at different bed thickness in a fixed bed reactor,10.1002/cjce.24123,3,HDPE,1.0
+"Pyrolysis of plastic waste for sustainable energy Recovery (secondary citation of Riesco-Avila, Vera-Rozo et al.)",https://www.sciencedirect.com/science/article/pii/S0196890425000342,2,mixed,0.6
+A review on the pyrolytic conversion of plastic waste into fuels and chemicals (secondary citation of ref [84]),https://www.sciencedirect.com/science/article/pii/S0165237024001347,2,"HDPE,LDPE",0.6
+Catalytic Pyrolysis of High-Density Polyethylene: Decomposition Efficiency and Kinetics,10.3390/catal12020140,2,HDPE,0.6
+"Pyrolysis of polypropylene plastic waste into carbonaceous char (secondary citation of Singh, Ruj et al. 2019)",https://pmc.ncbi.nlm.nih.gov/articles/PMC9620816/,2,mixed,0.6
+Kinetic study of high density polyethylene (HDPE) pyrolysis,https://www.researchgate.net/publication/244387290,2,HDPE,1.0
+Effects of Heating Rate and Temperature on the Yield of Thermal Pyrolysis of a Random Waste Plastic Mixture (citing Donaj et al. 2012),10.1016/j.wasman.2011.10.009,2,mixed,1.0
+Waste-to-Fuels: Pyrolysis of Low-Density Polyethylene Waste in the Presence of H-ZSM-11,10.3390/polym13081198,2,LDPE,1.0
+Conversion of plastic waste into fuel oil using zeolite catalysts in a bench-scale pyrolysis reactor,https://pmc.ncbi.nlm.nih.gov/articles/PMC8982165/,2,LDPE,1.0
+Recent Trends in the Pyrolysis of Non-Degradable Waste Plastics (secondary citation of Al-Salem et al.),https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/open.202100184,2,HDPE,0.6
+Catalytic pyrolysis of HDPE for enhanced hydrocarbon yield (secondary citation of Al-Salem/Lopez et al. 2011),https://www.sciencedirect.com/science/article/pii/S2772508124000759,1,HDPE,0.3
+Full Utilization of Hard-to-Recycle Mixed Plastic Waste by Conversion toward Pyrolysis Oil and BTX Aromatics on a Pilot Scale,10.1021/acs.energyfuels.4c05631,1,mixed,1.0
+Pyrolysis of common plastics and their mixtures to produce valuable petroleum-like products (secondary citation of Kumar and Singh 2011),https://www.sciencedirect.com/science/article/abs/pii/S0141391021002895,1,HDPE,0.6
+Pyrolysis of common plastics and their mixtures to produce valuable petroleum-like products (secondary citation of Fakhr Hoseini and Dastanian 2013),https://www.sciencedirect.com/science/article/abs/pii/S0141391021002895,1,PP,0.6
+Optimisation of Process Parameters to Maximise the Oil Yield from Pyrolysis of Mixed Waste Plastics,10.3390/su16072619,1,mixed,1.0
+Plastic Waste Pyrolysis Optimization to Produce Fuel,https://www.e3s-conferences.org/articles/e3sconf/pdf/2019/51/e3sconf_icenis2019_13005.pdf,1,mixed,1.0
+Effects of Heating Rate and Temperature on the Yield of Thermal Pyrolysis of a Random Waste Plastic Mixture,10.3390/su14159026,1,mixed,1.0
+"Response surface design, modelling and analysis on pyrolysis of waste high-density polyethylene (HDPE)",10.1007/s10163-023-01846-x,1,HDPE,1.0
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [12])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,HDPE,0.6
+"Techno-economic and environmental analysis of pyrolysis process simulation for plastic (PET) waste (validation dataset, likely citing an external experimental study)",https://www.sciencedirect.com/science/article/pii/B9780323958790500205,1,HDPE,0.6
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [13])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,LDPE,0.3
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [14])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,LDPE,0.6
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [16])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,PP,0.6
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [15])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,PP,1.0
+"The influence of plastic pyrolysis oil on fuel lubricity and diesel engine performance (compiled review table, citing ref [5])",https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10964204/,1,HDPE,0.6
+Thermal decomposition of polypropylene plastics through vacuum pyrolysis (secondary citation of Ahmad et al. 2014),https://www.sciencedirect.com/science/article/abs/pii/S0360544223011015,1,PP,0.6
+Thermal decomposition of polypropylene plastics through vacuum pyrolysis (secondary citation of Demirbas 2004),https://www.sciencedirect.com/science/article/abs/pii/S0360544223011015,1,PP,0.6
+Thermal decomposition of polypropylene plastics through vacuum pyrolysis (secondary citation of Sakata et al. 2013),https://www.sciencedirect.com/science/article/abs/pii/S0360544223011015,1,PP,0.6

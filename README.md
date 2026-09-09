@@ -54,9 +54,18 @@ To create or refresh the local database, run `python database.py`. This creates
 
 Use **Paper details** after signing in to select a paper and annotate an experiment.
 Annotations are stored only in the local database, not in the CSV or public repository.
-Back up the database to preserve them. Reimporting the same unchanged CSV preserves
-these three annotation fields. CSV row positions currently identify imported experiments;
-do not reorder or remove CSV rows and reimport an annotated database.
+Back up the database to preserve them. Imports match experiments by DOI and normalized
+imported content, including run notes, rather than CSV row positions. Reordering or
+inserting rows preserves existing IDs and annotations. Numeric formatting differences
+such as `500` and `500.0` do not create new records.
+
+Omitted experiments are retained with a blank current CSV row; they still appear in
+the browser and dataset metrics. Correcting measurements, confidence, or notes creates
+a new record without transferring annotations from the old record. Review the retained
+record before using the combined dataset. Imports treat each CSV as a complete snapshot
+for current row positions. Indistinguishable duplicate rows are rejected: distinguish
+real replicate runs in their notes. Invalid input is rejected before records are changed.
+Existing databases gain content identities on the next import without changing record IDs.
 Concurrent changes to provenance are rejected; reload the page before retrying.
 
 ## Current limitations

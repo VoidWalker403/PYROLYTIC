@@ -37,7 +37,8 @@ def assert_locked(app):
 
 @pytest.mark.parametrize("config", [None, {}, {"users": {}}, {"users": {"alice": "plaintext"}}])
 def test_unconfigured_app_blocks_access(config):
-    app = AppTest.from_file(APP)
+    # Cold imports can exceed AppTest's 3-second default on Windows.
+    app = AppTest.from_file(APP, default_timeout=15)
     if config is not None:
         app.secrets["auth"] = config
     app.run()

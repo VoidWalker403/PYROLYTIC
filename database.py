@@ -4,12 +4,33 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
+import math
 import sqlite3
 from contextlib import closing
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
 DEFAULT_DATABASE = PROJECT_DIR / "pyrolytic.sqlite3"
+
+# Source-row positions are provenance, never record identity. Notes distinguish
+# replicate runs with otherwise identical measurements in the published dataset.
+IMPORT_FIELDS = (
+    ("plastic_type", "plastic_type", False), ("pct_PP", "pct_pp", True),
+    ("pct_LDPE", "pct_ldpe", True), ("pct_HDPE", "pct_hdpe", True),
+    ("temperature_C", "temperature_c", True), ("residence_time_min", "residence_time_min", True),
+    ("feedstock_mass_g", "feedstock_mass_g", True), ("reactor_fill_pct", "reactor_fill_pct", True),
+    ("heating_rate_C_min", "heating_rate_c_min", True), ("catalyst", "catalyst", False),
+    ("oil_yield_wt%", "oil_yield_wt_pct", True), ("gas_yield_wt%", "gas_yield_wt_pct", True),
+    ("char_yield_wt%", "char_yield_wt_pct", True), ("reactor_type", "reactor_type", False),
+    ("confidence", "confidence", True), ("notes", "notes", False),
+)
+
+
+def _identity(doi, values):
+    serialized = json.dumps([doi, *values], ensure_ascii=False, allow_nan=False)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -52,12 +73,37 @@ def connect(path: str | Path = DEFAULT_DATABASE) -> sqlite3.Connection:
 
 
 def initialize(path: str | Path = DEFAULT_DATABASE) -> None:
-    with connect(path) as connection:
+    with closing(connect(path)) as connection, connection:
         connection.executescript(SCHEMA)
+        connection.execute("BEGIN IMMEDIATE")
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(experiments)")}
+        if "import_key" not in columns:
+            connection.execute("ALTER TABLE experiments ADD COLUMN import_key TEXT")
+        pending = connection.execute(
+            "SELECT e.*, p.doi FROM experiments e JOIN papers p ON p.id=e.paper_id "
+            "WHERE e.import_key IS NULL").fetchall()
+        keys = {row[0] for row in connection.execute(
+            "SELECT import_key FROM experiments WHERE import_key IS NOT NULL")}
+        for row in pending:
+            values = [(_number(str(row[column])) if numeric and row[column] is not None
+                       else _text(row[column])) for _, column, numeric in IMPORT_FIELDS]
+            key = _identity(_text(row["doi"]), values)
+            if key in keys:
+                raise ValueError("Existing database contains indistinguishable experiments; "
+                                 "add distinct run identifiers in their notes before importing.")
+            keys.add(key)
+            connection.execute("UPDATE experiments SET import_key=? WHERE id=?", (key, row["id"]))
+        connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_experiments_import_key "
+                           "ON experiments(import_key)")
 
 
 def _number(value: str | None) -> float | None:
-    return None if value is None or not value.strip() else float(value)
+    if value is None or not value.strip():
+        return None
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("Numeric values must be finite, or blank when unknown.")
+    return 0.0 if number == 0 else number
 
 
 def _text(value: str | None) -> str | None:
@@ -66,53 +112,55 @@ def _text(value: str | None) -> str | None:
 
 
 def import_csv(csv_path: str | Path, database_path: str | Path = DEFAULT_DATABASE) -> tuple[int, int]:
-    """Import the dataset idempotently; return (source rows, experiment rows)."""
-    initialize(database_path)
-    paper_rows = 0
-    experiment_rows = 0
+    """Merge a CSV snapshot by content; keep omitted records and annotations.
+
+    Changes to imported experiment content create new records. We deliberately
+    do not guess which old experiment a corrected measurement should replace.
+    """
+    prepared = []
+    seen = set()
     with Path(csv_path).open(newline="", encoding="utf-8-sig") as source:
         reader = csv.DictReader(source)
         required = {"source_doi", "source_title", "plastic_type"}
         missing = required - set(reader.fieldnames or ())
         if missing:
             raise ValueError(f"Dataset is missing required columns: {', '.join(sorted(missing))}")
-        with connect(database_path) as connection:
-            for source_row, row in enumerate(reader, start=2):
+        for source_row, row in enumerate(reader, start=2):
+            try:
                 doi, title = _text(row.get("source_doi")), _text(row.get("source_title"))
-                if not doi or not title:
-                    raise ValueError(f"Row {source_row} needs source_doi and source_title")
-                connection.execute(
-                    """INSERT INTO papers (doi, title) VALUES (?, ?)
-                    ON CONFLICT(doi) DO UPDATE SET title=excluded.title,
-                    updated_at=CURRENT_TIMESTAMP""", (doi, title))
-                paper_id = connection.execute("SELECT id FROM papers WHERE doi = ?", (doi,)).fetchone()["id"]
-                paper_rows += 1
-                values = (
-                    paper_id, _text(row.get("plastic_type")), _number(row.get("pct_PP")),
-                    _number(row.get("pct_LDPE")), _number(row.get("pct_HDPE")),
-                    _number(row.get("temperature_C")), _number(row.get("residence_time_min")),
-                    _number(row.get("feedstock_mass_g")), _number(row.get("reactor_fill_pct")),
-                    _number(row.get("heating_rate_C_min")), _text(row.get("catalyst")),
-                    _number(row.get("oil_yield_wt%")), _number(row.get("gas_yield_wt%")),
-                    _number(row.get("char_yield_wt%")), _text(row.get("reactor_type")),
-                    _number(row.get("confidence")), _text(row.get("notes")), source_row)
-                connection.execute(
-                    """INSERT INTO experiments (
-                    paper_id, plastic_type, pct_pp, pct_ldpe, pct_hdpe,
-                    temperature_c, residence_time_min, feedstock_mass_g,
-                    reactor_fill_pct, heating_rate_c_min, catalyst,
-                    oil_yield_wt_pct, gas_yield_wt_pct, char_yield_wt_pct,
-                    reactor_type, confidence, notes, source_row)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(paper_id, source_row) DO UPDATE SET
-                    plastic_type=excluded.plastic_type, temperature_c=excluded.temperature_c,
-                    oil_yield_wt_pct=excluded.oil_yield_wt_pct,
-                    gas_yield_wt_pct=excluded.gas_yield_wt_pct,
-                    char_yield_wt_pct=excluded.char_yield_wt_pct,
-                    confidence=excluded.confidence, notes=excluded.notes,
-                    updated_at=CURRENT_TIMESTAMP""", values)
-                experiment_rows += 1
-    return paper_rows, experiment_rows
+                if not doi or not title or not _text(row.get("plastic_type")):
+                    raise ValueError("source_doi, source_title, and plastic_type are required")
+                if None in row:
+                    raise ValueError("too many CSV columns")
+                values = tuple((_number(row.get(csv_name)) if numeric else _text(row.get(csv_name)))
+                               for csv_name, _, numeric in IMPORT_FIELDS)
+                key = _identity(doi, values)
+                if key in seen:
+                    raise ValueError("indistinguishable duplicate; add a distinct run identifier in notes")
+                seen.add(key)
+                prepared.append((source_row, doi, title, values, key))
+            except ValueError as error:
+                raise ValueError(f"Row {source_row}: {error}") from error
+    initialize(database_path)
+    columns = ", ".join(column for _, column, _ in IMPORT_FIELDS)
+    placeholders = ", ".join("?" for _ in range(len(IMPORT_FIELDS) + 3))
+    with closing(connect(database_path)) as connection, connection:
+        connection.execute("BEGIN IMMEDIATE")
+        # Release old row positions before assigning the new snapshot's positions.
+        # Omitted records remain available, but no longer claim a current CSV row.
+        connection.execute("UPDATE experiments SET source_row=NULL")
+        for source_row, doi, title, values, key in prepared:
+            connection.execute(
+                """INSERT INTO papers (doi, title) VALUES (?, ?)
+                ON CONFLICT(doi) DO UPDATE SET title=excluded.title,
+                updated_at=CURRENT_TIMESTAMP""", (doi, title))
+            paper_id = connection.execute("SELECT id FROM papers WHERE doi=?", (doi,)).fetchone()[0]
+            connection.execute(
+                f"""INSERT INTO experiments (paper_id, {columns}, source_row, import_key)
+                VALUES ({placeholders}) ON CONFLICT(import_key) DO UPDATE SET
+                source_row=excluded.source_row, updated_at=CURRENT_TIMESTAMP""",
+                (paper_id, *values, source_row, key))
+    return len(prepared), len(prepared)
 
 
 def paper_details(path: str | Path = DEFAULT_DATABASE) -> tuple[list[dict], list[dict]]:

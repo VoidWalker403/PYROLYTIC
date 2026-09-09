@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 from auth import require_login
 from literature_browser import render as render_literature_browser
+from analytics import render as render_analytics
 
 sys.path.insert(0, str(Path(__file__).parent / 'rag'))
 sys.path.insert(0, str(Path(__file__).parent / 'llm'))
@@ -141,3 +142,6 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
 
 st.divider()
 render_literature_browser()
+
+st.divider()
+render_analytics()

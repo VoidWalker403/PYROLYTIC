@@ -42,6 +42,7 @@ Mode in the sidebar to query the local pipeline.
 - `database.py`: imports the CSV into a local SQLite database with paper and experiment provenance.
 - `literature_browser.py`: provides the filterable Streamlit literature browser and provenance inspector.
 - `analytics.py`: renders yield and confidence charts from the SQLite records.
+- `paper_details.py`: source links, full experiment records, and editable page/table/extraction provenance after login.
 - Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
@@ -50,6 +51,13 @@ Mode in the sidebar to query the local pipeline.
 
 To create or refresh the local database, run `python database.py`. This creates
 `pyrolytic.sqlite3`, which is ignored by Git.
+
+Use **Paper details** after signing in to select a paper and annotate an experiment.
+Annotations are stored only in the local database, not in the CSV or public repository.
+Back up the database to preserve them. Reimporting the same unchanged CSV preserves
+these three annotation fields. CSV row positions currently identify imported experiments;
+do not reorder or remove CSV rows and reimport an annotated database.
+Concurrent changes to provenance are rejected; reload the page before retrying.
 
 ## Current limitations
 

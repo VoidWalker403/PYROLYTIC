@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -112,6 +113,33 @@ def import_csv(csv_path: str | Path, database_path: str | Path = DEFAULT_DATABAS
                     updated_at=CURRENT_TIMESTAMP""", values)
                 experiment_rows += 1
     return paper_rows, experiment_rows
+
+
+def paper_details(path: str | Path = DEFAULT_DATABASE) -> tuple[list[dict], list[dict]]:
+    """Read full paper and experiment records without changing the database."""
+    with closing(connect(path)) as connection:
+        papers = [dict(row) for row in connection.execute("SELECT * FROM papers ORDER BY title, id")]
+        experiments = [dict(row) for row in connection.execute("SELECT * FROM experiments ORDER BY id")]
+    return papers, experiments
+
+
+def save_provenance(experiment_id: int, values: tuple, expected: tuple,
+                    path: str | Path = DEFAULT_DATABASE) -> None:
+    """Save only provenance, rejecting edits made against an outdated record."""
+    if len(values) != 3 or len(expected) != 3:
+        raise ValueError("Provide page, table, and extraction method.")
+    if any(value is not None and (not isinstance(value, str) or len(value) > 1000)
+           for value in values):
+        raise ValueError("Provenance fields must be text of at most 1,000 characters.")
+    cleaned = tuple(_text(value) for value in values)
+    with closing(connect(path)) as connection, connection:
+        result = connection.execute(
+            """UPDATE experiments SET source_page=?, source_table=?, extraction_method=?,
+            updated_at=CURRENT_TIMESTAMP WHERE id=? AND source_page IS ?
+            AND source_table IS ? AND extraction_method IS ?""",
+            (*cleaned, experiment_id, *expected))
+        if result.rowcount != 1:
+            raise ValueError("This experiment changed or was removed. Reload the page before editing again.")
 
 
 def summarize(path: str | Path = DEFAULT_DATABASE) -> dict[str, int]:

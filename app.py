@@ -151,5 +151,9 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
 st.divider()
 render_literature_browser()
 
+from paper_details import render as render_paper_details
+st.divider()
+render_paper_details()
+
 st.divider()
 render_analytics()

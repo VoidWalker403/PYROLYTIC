@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 from auth import require_login
 from literature_browser import render as render_literature_browser
+from literature_browser import query_experiments
 from analytics import render as render_analytics
 
 sys.path.insert(0, str(Path(__file__).parent / 'rag'))
@@ -25,6 +26,13 @@ sys.path.insert(0, str(Path(__file__).parent / 'llm'))
 st.set_page_config(page_title="PyroLytic", page_icon="\U0001F525", layout="wide")
 
 require_login()
+
+experiment_rows = query_experiments()
+experiment_count = len(experiment_rows)
+paper_count = len({row["doi"] for row in experiment_rows})
+confidence_values = [row["confidence"] for row in experiment_rows if row["confidence"] is not None]
+average_confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0
+pp_count = sum(row["plastic_type"] == "PP" for row in experiment_rows)
 
 # ---- Pre-verified demo exchanges (real project data, not invented) ----
 DEMO_QA = [
@@ -78,10 +86,10 @@ with st.sidebar:
     st.title("PyroLytic")
     st.caption("AI-Assisted Waste Plastic Pyrolysis Process Advisor")
     st.divider()
-    st.metric("Dataset rows", "146")
-    st.metric("Unique source papers", "27")
-    st.metric("Weighted-avg confidence", "0.90")
-    st.metric("Narrow-scope model R² (PP)", "0.57")
+    st.metric("Experiment rows", f"{experiment_count:,}")
+    st.metric("Unique source papers", f"{paper_count:,}")
+    st.metric("Average extraction confidence", f"{average_confidence:.2f}")
+    st.metric("PP experiment rows", f"{pp_count:,}")
     st.divider()
     demo_mode = st.toggle("Demo Mode (pre-verified answers)", value=True,
                            help="ON = safe, pre-tested answers for live presentation. "

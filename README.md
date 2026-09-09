@@ -42,6 +42,7 @@ Mode in the sidebar to query the local pipeline.
 - `database.py`: imports the CSV into a local SQLite database with paper and experiment provenance.
 - `literature_browser.py`: provides the filterable Streamlit literature browser and provenance inspector.
 - `analytics.py`: renders yield and confidence charts from the SQLite records.
+- Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
 - `eda.ipynb`: exploratory analysis; launch Jupyter from the repository directory.

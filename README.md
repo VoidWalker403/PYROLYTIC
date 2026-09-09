@@ -39,10 +39,14 @@ Mode in the sidebar to query the local pipeline.
 
 - `pyrolysis_yields.csv`: extracted literature data with source identifiers and confidence notes.
 - `build_corpus.py`: rebuilds `corpus_manifest.csv` from the dataset.
+- `database.py`: imports the CSV into a local SQLite database with paper and experiment provenance.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
 - `eda.ipynb`: exploratory analysis; launch Jupyter from the repository directory.
 - `tests/`: authentication and Streamlit interface tests (`python -m pytest`).
+
+To create or refresh the local database, run `python database.py`. This creates
+`pyrolytic.sqlite3`, which is ignored by Git.
 
 ## Current limitations
 

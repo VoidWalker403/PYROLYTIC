@@ -45,6 +45,7 @@ Mode in the sidebar to query the local pipeline.
 - `paper_details.py`: source links, full experiment records, and editable page/table/extraction provenance after login.
 - `import_preview.py`: review a CSV upload before explicitly saving it to the local database.
 - `chat_sources.py`: clickable live-answer citations, retrieved excerpts, and captured experiment details.
+- `data_quality.py`: read-only screening findings with source links and experiment navigation.
 - Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
@@ -93,6 +94,15 @@ available. Expand a source to inspect its excerpts, yields, conditions, and prov
 Sources cited by the answer are labeled separately from other retrieved context; unknown
 source markers trigger a warning. This checks source membership, not scientific correctness.
 Saved chat details remain as captured even after database edits, and logout clears them.
+
+**Data quality** flags missing core fields and page/table provenance, invalid numeric
+ranges, incomplete yields, and complete yield totals more than 5 percentage points
+from 100%. It also screens composition totals, retained records, wax-to-oil mappings
+noted in the data, and temperatures outside a heuristic 100–1200 °C band. Missing
+measurements are never treated as zero. These are review prompts, not corrections or
+claims that the underlying paper is wrong. Original units are not stored separately;
+the report states expected column units but cannot verify unit conversions automatically.
+Filter by severity/check and use **Show experiment in Paper details** to inspect the record.
 
 ## Current limitations
 

@@ -176,3 +176,7 @@ render_import_preview()
 from search_index import render as render_search_index
 st.divider()
 render_search_index()
+
+from data_quality import render as render_data_quality
+st.divider()
+render_data_quality()

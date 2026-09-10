@@ -27,6 +27,8 @@ st.set_page_config(page_title="PyroLytic", page_icon="\U0001F525", layout="wide"
 
 require_login()
 
+from chat_sources import capture_sources, render_answer
+
 experiment_rows = query_experiments()
 experiment_count = len(experiment_rows)
 paper_count = len({row["doi"] for row in experiment_rows})
@@ -105,7 +107,10 @@ if "messages" not in st.session_state:
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        if msg['role'] == 'assistant':
+            render_answer(msg)
+        else:
+            st.markdown(msg["content"])
 
 if demo_mode:
     st.info("Demo Mode is ON — try one of the pre-verified questions below, or type your own "
@@ -123,6 +128,7 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
+        answer_sources = None
         if demo_mode:
             # Closest pre-verified match by simple keyword overlap - avoids
             # calling the live model in demo mode, keeps latency at zero
@@ -137,16 +143,21 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
                     from explain import explain
                     start = time.time()
                     retrieved = retrieve(prompt, k=3)
+                    captured = capture_sources(retrieved)
                     response = explain(prompt, retrieved_chunks=retrieved, verbose_timing=False)
+                    answer_sources = captured
                     elapsed = time.time() - start
-                    st.markdown(response)
+                    render_answer({'content': response, 'sources': answer_sources})
                     st.caption(f"Live response in {elapsed:.1f}s")
                 except Exception as e:
                     response = (f"Live pipeline error: {e}\n\nThis is why Demo Mode exists as a "
                                 f"presentation safety net — switch it on in the sidebar.")
                     st.error(response)
 
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        message = {"role": "assistant", "content": response}
+        if answer_sources is not None:
+            message['sources'] = answer_sources
+        st.session_state.messages.append(message)
 
 st.divider()
 render_literature_browser()

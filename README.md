@@ -44,6 +44,7 @@ Mode in the sidebar to query the local pipeline.
 - `analytics.py`: renders yield and confidence charts from the SQLite records.
 - `paper_details.py`: source links, full experiment records, and editable page/table/extraction provenance after login.
 - `import_preview.py`: review a CSV upload before explicitly saving it to the local database.
+- `chat_sources.py`: clickable live-answer citations, retrieved excerpts, and captured experiment details.
 - Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
@@ -85,6 +86,13 @@ again. Failed rebuilds leave the previous selection intact; stale data cannot be
 Old collections remain locally for now and consume disk space. The first rebuild downloads
 the embedding model; documents are embedded locally. Rebuilds do not install or start
 Ollama, which is still needed for live generated answers.
+
+Live answers keep their retrieved sources and experiment details in the browser session.
+Matching `[SOURCE: ...]` markers become clickable links when a valid DOI or web URL is
+available. Expand a source to inspect its excerpts, yields, conditions, and provenance.
+Sources cited by the answer are labeled separately from other retrieved context; unknown
+source markers trigger a warning. This checks source membership, not scientific correctness.
+Saved chat details remain as captured even after database edits, and logout clears them.
 
 ## Current limitations
 

@@ -129,3 +129,25 @@ def test_live_pipeline_only_runs_after_login(app, monkeypatch):
     assert not app.exception
     assert calls == [("Test live question", 3)]
     assert app.session_state["messages"][-1]["content"] == "Live test answer"
+
+
+def test_live_sources_survive_reruns_and_clear_on_logout(app, monkeypatch):
+    chunk = {'source_doi': '10.1000/example', 'source_title': 'Test paper',
+             'text': 'Test reported yield 70%', 'chunk_type': 'fulltext'}
+    monkeypatch.setitem(sys.modules, 'retrieve', SimpleNamespace(retrieve=lambda *args, **kwargs: [chunk]))
+    monkeypatch.setitem(sys.modules, 'explain', SimpleNamespace(
+        explain=lambda *args, **kwargs: 'Reported 70% [SOURCE: 10.1000/example]'))
+    sign_in(app)
+    app.toggle[0].set_value(False).run()
+    app.chat_input[0].set_value('Give a cited answer').run()
+    assert not app.exception
+    saved = app.session_state['messages'][-1]['sources']
+    assert saved[0]['excerpts'] == ['Test reported yield 70%']
+    assert any('Cited in answer' in panel.label for panel in app.expander)
+    app.run()
+    assert not app.exception
+    assert app.session_state['messages'][-1]['sources'] == saved
+    assert any('https://doi.org/10.1000/example' in item.value for item in app.markdown)
+    next(button for button in app.button if button.label == 'Log out').click().run()
+    assert_locked(app)
+    assert 'messages' not in app.session_state.filtered_state

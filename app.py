@@ -161,3 +161,7 @@ render_analytics()
 from import_preview import render as render_import_preview
 st.divider()
 render_import_preview()
+
+from search_index import render as render_search_index
+st.divider()
+render_search_index()

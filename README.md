@@ -74,8 +74,17 @@ The preview shows new, matching, and retained experiments plus paper title chang
 without writing to the database. Review the tables, acknowledge the changes, then
 select **Save import to local database**. If another session changes the data, refresh
 the preview and review it again. Invalid or empty CSVs cannot be saved.
-Importing does not modify the tracked CSV or rebuild ChromaDB. Its existing ingestion
-command still reads the tracked CSV, so uploaded records are not yet included in chat retrieval.
+Importing does not modify the tracked CSV or automatically rebuild ChromaDB.
+Use **Rebuild search index** after saving an upload or editing provenance (or run
+`python ingest.py`). Indexing reads SQLite, including retained experiments, and optional
+`raw_texts/*.txt` files. It only imports the tracked CSV if no database exists.
+
+Live retrieval rejects missing or outdated indexes. Each rebuild creates a separate
+collection and selects it only after all chunks are written and the sources are checked
+again. Failed rebuilds leave the previous selection intact; stale data cannot be queried.
+Old collections remain locally for now and consume disk space. The first rebuild downloads
+the embedding model; documents are embedded locally. Rebuilds do not install or start
+Ollama, which is still needed for live generated answers.
 
 ## Current limitations
 

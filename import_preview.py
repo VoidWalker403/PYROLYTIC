@@ -42,7 +42,7 @@ def render_upload(data, database_path=database.DEFAULT_DATABASE):
             else:
                 st.caption("None")
     st.caption("Saving updates only this local database. It does not change the source CSV, "
-               "GitHub repository, or the chatbot search index. Rebuild the search index separately.")
+               "GitHub repository, or the chatbot search index. Use Rebuild search index after saving.")
     if st.button("Refresh preview", key="refresh_import_preview"):
         st.session_state.pop(cache_key, None)
         st.rerun()

@@ -46,6 +46,9 @@ Mode in the sidebar to query the local pipeline.
 - `import_preview.py`: review a CSV upload before explicitly saving it to the local database.
 - `chat_sources.py`: clickable live-answer citations, retrieved excerpts, and captured experiment details.
 - `data_quality.py`: read-only screening findings with source links and experiment navigation.
+- `research_library.py`: searchable paper catalog, local review workflow and filtered CSV export.
+- `research_library.json`: public bibliographic discovery snapshot with DOI and metadata provenance.
+- `discover_papers.py`: repeatable Crossref discovery; refreshes metadata without inventing experiments.
 - Sidebar metrics are calculated from SQLite at runtime so they stay synchronized with imported data.
 - `ingest.py`, `retrieve.py`, `explain.py`: embedding, retrieval, and explanation pipeline.
 - `route_comparison.py`: simplified economics and sensitivity calculations.
@@ -106,12 +109,85 @@ Filter by severity/check and use **Show experiment in Paper details** to inspect
 
 ## Current limitations
 
-Some demo responses reference model training results, `models/model_card.md`, and
-`economics/economics_card.md`. Those training scripts and reports are not included
-in this repository, so their reported model scores cannot be reproduced here.
-Demo responses are static examples, not fresh calculations. LLM grounding is
+The repository does not include a trained yield predictor or reproducible model
+evaluation reports. Demo responses are labeled static workflow examples and make
+no model-accuracy or calculated route-ranking claims. LLM grounding is
 prompt-based and does not guarantee factual answers. Literature values and
 economic assumptions require independent validation for practical use.
+
+## Free deployment options
+
+### Online preview
+
+[Streamlit Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud) offers free hosting for Streamlit apps connected to GitHub. Select this repository, its intended branch, and `app.py`; add the `[auth.users]` configuration in the host's Secrets settings rather than uploading `.streamlit/secrets.toml`. Only committed and pushed files are deployed.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the exact Community Cloud configuration,
+secret template, sharing model, and post-launch checks.
+
+The app starts in Demo Mode, which shows static example answers—not live AI. On startup it can rebuild its SQLite database from the tracked CSV and load `research_library.json` if that snapshot is included in the deployed branch. Changes to notes, curation, imports, and provenance are written to local SQLite. Community Cloud does not guarantee local-file persistence, so do not use its filesystem as the permanent store for edits. Use an external database and adapt the app before relying on shared, persistent changes.
+
+Community Cloud apps sleep after 12 hours without traffic. Its published resource limits are approximate (about 0.69–2.7 GB RAM) and may change. This project's runtime requirements include scientific packages, ChromaDB, and sentence-transformers; the full app may exceed a small instance's resources. Remove development-only packages from the hosted requirements and test a deployment before sharing it.
+
+### Live Ollama answers
+
+`explain.py` currently calls a local Ollama server with `qwen2.5:7b`. A hosted app cannot access the `E:\` USB drive or Ollama at `localhost` on your laptop. To keep this exact local setup, both Streamlit and Ollama must run on the same computer, which must stay on and connected; do not expose Ollama's unauthenticated local API directly to the public internet.
+
+For a cloud-hosted live chatbot, add a server-side client/configuration for [Ollama's cloud API](https://docs.ollama.com/cloud), store its API key in the host's Secrets, and choose a model actually listed by that API. The current `ollama.chat()` call defaults to local Ollama, so this cloud connection is not configured yet. Ollama's [free plan](https://ollama.com/blog/transparent-pricing) includes only a small monthly allowance for starter models; it is not unlimited free inference. Prompts sent to the cloud are processed by Ollama, so only use this option for data you are comfortable sending there.
+
+## Research library and curation
+
+The September 25, 2026 snapshot contains **582 unique Crossref DOI records**.
+Combined with the existing dataset it produces **607 library records**, including
+**580 additional papers awaiting extraction**. The **146 existing experiments**
+and their annotations are preserved. Counts describe this snapshot and can change
+with later local imports. A library paper is a bibliographic record, not a
+downloaded PDF, a verified yield, or proof of scientific quality.
+
+After login, use **Research paper library** to search titles/authors/DOIs/journals,
+filter by publication year, topic, review status, article type, or extraction
+coverage, and open the publisher's DOI page. Results are paginated in groups of
+50. Select a paper on the current page to save **Unreviewed**, **Shortlisted**,
+**Reviewed**, or **Excluded** status and local notes. Reviewed means you reviewed
+the record; it does not certify its measurements. Conflicting edits from another
+session are rejected; use **Reload saved review** to obtain its current values.
+Export applies to all filtered results, including those on other pages.
+
+The catalog adds tables to the existing SQLite database and never changes paper
+or experiment records. Equivalent bare DOI and doi.org identifiers are merged
+within the catalog. Refreshes retain notes, review status and omitted papers.
+The bundled snapshot loads locally after authentication; opening the app does not
+call Crossref. New experiment sources are added to the catalog on the next rerun.
+
+To refresh from the public API, from the project directory:
+
+```sh
+python discover_papers.py --rows 100 --until 2026-09-25 --import-library
+```
+
+Omit `--until` to use today's date. `--rows` is the result limit **per query**
+(1–1000), not a guaranteed number of new papers. Eight topic searches cover
+plastic waste, polyethylene, polypropylene, catalysis, polystyrene, mixtures,
+kinetics and sustainability/economics. The saved snapshot records the queries,
+retrieval time and per-paper metadata URLs. Searches use title relevance, not a
+systematic-review protocol. Titles must mention pyrolysis and plastics/a listed
+polymer; obvious correction/retraction notices and a news publication are filtered.
+This is not a comprehensive retraction or quality check. Article/review and topic
+labels are heuristic. Crossref metadata can be incomplete or inaccurate.
+
+Failed requests have bounded retries and timeouts. The snapshot is replaced only
+after all queries succeed. There are no new package dependencies or API-key
+requirements. Metadata is provided by the
+[Crossref REST API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/).
+
+New library metadata is deliberately separate from the evidence index: live chat
+continues to retrieve extracted experiments and local text. To add quantitative
+evidence, obtain permitted access to a paper, verify measurements/units and
+page/table provenance, use **Import experiments**, and rebuild the search index.
+Do not treat a metadata-only library expansion as added experimental evidence.
+
+The temperature filter supports missing, constant and decimal temperatures.
+Live-chat failures display recovery guidance without exposing exception details;
+only the exception class is logged locally.
 
 ## Files kept local
 

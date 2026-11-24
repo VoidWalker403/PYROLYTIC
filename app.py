@@ -1,17 +1,6 @@
-"""
-PyroLytic — Streamlit Chatbot Dashboard (Week 9)
-
-RUN ON YOUR OWN MACHINE: streamlit run app.py
-Requires: Week 0 (Ollama), Week 7 (RAG index built), Week 8 (llm/explain.py) all working.
-
-DEMO SAFETY NET: includes a "Demo Mode" toggle using pre-verified real answers
-(built from actual project data, not fabricated) in case live model latency
-or an unexpected error happens during a live presentation. Live Mode calls
-the real pipeline; Demo Mode replays known-good, pre-tested exchanges.
-Always test Live Mode yourself before presenting - don't rely on Demo Mode
-as your only rehearsal.
-"""
+"""Authenticated research library, experiment curation and local retrieval dashboard."""
 import streamlit as st
+import logging
 import sys
 import time
 from pathlib import Path
@@ -28,6 +17,10 @@ st.set_page_config(page_title="PyroLytic", page_icon="\U0001F525", layout="wide"
 require_login()
 
 from chat_sources import capture_sources, render_answer
+from research_library import ensure_library, query_library, render as render_research_library
+
+ensure_library()
+library_count = len(query_library())
 
 experiment_rows = query_experiments()
 experiment_count = len(experiment_rows)
@@ -36,49 +29,35 @@ confidence_values = [row["confidence"] for row in experiment_rows if row["confid
 average_confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0
 pp_count = sum(row["plastic_type"] == "PP" for row in experiment_rows)
 
-# ---- Pre-verified demo exchanges (real project data, not invented) ----
+# Static examples explain the workflow; no unavailable model scores are claimed.
 DEMO_QA = [
     {
         "question": "What oil yield can I expect from PP pyrolysis at around 500°C?",
         "answer": (
-            "Based on the retrieved literature, PP pyrolysis oil yield at 500°C varies "
-            "considerably depending on catalyst use: **[SOURCE: 10.1038/s41598-023-37769-8]** "
-            "reports 70.0% oil yield with no catalyst, rising to 80.8% with a kaolin catalyst "
-            "at a 1:2 ratio. However, **[SOURCE: 10.3390/polym16101302]** reports a much lower "
-            "41.9% oil yield at the same temperature under different reactor conditions "
-            "(fixed-bed, varying feedstock mass).\n\n"
-            "This spread is exactly why the project's narrow-scope model (n=16, R²=0.57) only "
-            "achieves moderate predictive power even within a single study — reactor design "
-            "and feedstock loading matter as much as temperature alone."
+            "This is a static example, not a yield prediction. Filter the literature browser "
+            "to PP and the temperature range you need, then check catalyst, reactor, feedstock "
+            "and source provenance. Measurements from different studies should not be treated "
+            "as interchangeable. The research library provides additional papers to review; "
+            "their metadata does not establish an experimental yield."
         ),
     },
     {
         "question": "Why is Route B (petrochemical) ranked higher than Route A (fuel oil)?",
         "answer": (
-            "Route B (petrochemical feedstock / BTX) has a substantially higher NPV ($77.9m vs "
-            "$17.0m) and IRR (44.6% vs 19.7%) than Route A at the base case. More importantly, "
-            "sensitivity analysis shows Route A is fragile: a 20% drop in product price nearly "
-            "eliminates its entire NPV (down to $0.6m), while Route B stays strongly profitable "
-            "under the same shock ($46.1m). Route B costs more to build (higher CAPEX for "
-            "catalytic upgrading equipment) but is structurally less risky, not just more "
-            "profitable — see `economics/economics_card.md` for full sensitivity tables."
+            "This static example does not establish a route ranking. The included route "
+            "comparison is a simplified scenario calculator. Review capital costs, product "
+            "prices, operating costs and sensitivity assumptions before comparing results. "
+            "A larger paper library helps locate relevant evidence but does not validate "
+            "the project's economic assumptions."
         ),
     },
     {
         "question": "How reliable is the yield prediction model?",
         "answer": (
-            "It depends on scope, and this project reports both results honestly. On PP data "
-            "from a single clean study (16 rows, one reactor, a real 3-factor experimental "
-            "design), a quadratic model explains 57% of oil-yield variance under leave-one-out "
-            "cross-validation — a genuine result.\n\n"
-            "On the full 146-row literature-aggregated dataset, the model reaches R²≈0.23, but "
-            "a stratified check revealed why: within any single plastic type except PP, the "
-            "model has essentially no predictive power beyond guessing that type's average "
-            "yield. The overall R² is mostly the model learning to distinguish *which plastic "
-            "type* a row is, not how conditions drive yield within a type. PP is the exception "
-            "because it has the most densely-sampled conditions — which is also why it's the "
-            "only type with a strong narrow-scope result. See `models/model_card.md` Section 6 "
-            "for the full diagnostic."
+            "This repository does not include a trained yield predictor or the training "
+            "reports needed to reproduce a predictive score. No accuracy claim is made here. "
+            "Use Data quality to screen the existing experiments, review their sources, "
+            "and validate any future model using held-out papers to reduce leakage."
         ),
     },
 ]
@@ -90,14 +69,13 @@ with st.sidebar:
     st.divider()
     st.metric("Experiment rows", f"{experiment_count:,}")
     st.metric("Unique source papers", f"{paper_count:,}")
+    st.caption(f"Research library: {library_count:,} records, including papers awaiting extraction.")
     st.metric("Average extraction confidence", f"{average_confidence:.2f}")
     st.metric("PP experiment rows", f"{pp_count:,}")
     st.divider()
-    demo_mode = st.toggle("Demo Mode (pre-verified answers)", value=True,
-                           help="ON = safe, pre-tested answers for live presentation. "
-                                "OFF = calls the real local LLM + RAG pipeline (10-25s latency).")
-    st.caption("Turn OFF to show the live pipeline is real, not just a scripted demo — "
-               "but test this yourself beforehand.")
+    demo_mode = st.toggle("Demo Mode (static examples)", value=True,
+                         help="ON shows static workflow examples. OFF queries the local model and experiment index.")
+    st.caption("Live mode requires a current search index and a running local Ollama model.")
 
 # ---- Main chat interface ----
 st.header("Ask PyroLytic")
@@ -113,7 +91,7 @@ for msg in st.session_state.messages:
             st.markdown(msg["content"])
 
 if demo_mode:
-    st.info("Demo Mode is ON — try one of the pre-verified questions below, or type your own "
+    st.info("Demo Mode is ON — try one of the static example questions below, or type your own "
             "to see the closest match.", icon="\u2139\ufe0f")
     cols = st.columns(len(DEMO_QA))
     for i, (col, qa) in enumerate(zip(cols, DEMO_QA)):
@@ -130,11 +108,11 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
     with st.chat_message("assistant"):
         answer_sources = None
         if demo_mode:
-            # Closest pre-verified match by simple keyword overlap - avoids
+            # Closest static example by simple keyword overlap - avoids
             # calling the live model in demo mode, keeps latency at zero
             best_match = max(DEMO_QA, key=lambda qa: len(
                 set(prompt.lower().split()) & set(qa["question"].lower().split())))
-            response = (f"*(Demo Mode - closest pre-verified match shown)*\n\n{best_match['answer']}")
+            response = (f"*(Demo Mode - closest static example shown)*\n\n{best_match['answer']}")
             st.markdown(response)
         else:
             with st.spinner("Querying local model (10-25s expected on CPU)..."):
@@ -149,15 +127,20 @@ if prompt := st.chat_input("Ask about pyrolysis conditions, routes, or model rel
                     elapsed = time.time() - start
                     render_answer({'content': response, 'sources': answer_sources})
                     st.caption(f"Live response in {elapsed:.1f}s")
-                except Exception as e:
-                    response = (f"Live pipeline error: {e}\n\nThis is why Demo Mode exists as a "
-                                f"presentation safety net — switch it on in the sidebar.")
+                except Exception as error:
+                    # Log the failure category without query text, source text or secrets.
+                    logging.getLogger(__name__).warning("Live pipeline failed (%s)", type(error).__name__)
+                    response = ("Live answers are unavailable. Check the search-index status below "
+                                "and confirm that Ollama and the configured model are running locally.")
                     st.error(response)
 
         message = {"role": "assistant", "content": response}
         if answer_sources is not None:
             message['sources'] = answer_sources
         st.session_state.messages.append(message)
+
+st.divider()
+render_research_library()
 
 st.divider()
 render_literature_browser()

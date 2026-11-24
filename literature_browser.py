@@ -44,22 +44,29 @@ def render() -> None:
     reactor_types = sorted({row["reactor_type"] for row in rows if row["reactor_type"]})
     catalysts = sorted({row["catalyst"] for row in rows if row["catalyst"]})
     temperatures = [row["temperature_c"] for row in rows if row["temperature_c"] is not None]
-    minimum, maximum = int(min(temperatures)), int(max(temperatures))
 
     controls = st.columns(4)
     selected_plastic = controls[0].selectbox("Plastic", ["All"] + plastic_types, key="browser_plastic")
     selected_reactor = controls[1].selectbox("Reactor", ["All"] + reactor_types, key="browser_reactor")
     selected_catalyst = controls[2].selectbox("Catalyst", ["All"] + catalysts, key="browser_catalyst")
-    selected_temperature = controls[3].slider(
-        "Temperature (°C)", minimum, maximum, (minimum, maximum), key="browser_temperature"
-    )
+    selected_temperature = None
+    if temperatures and min(temperatures) < max(temperatures):
+        minimum, maximum = float(min(temperatures)), float(max(temperatures))
+        selected_temperature = controls[3].slider(
+            "Temperature (°C)", minimum, maximum, (minimum, maximum), key="browser_temperature"
+        )
+    elif temperatures:
+        controls[3].caption(f"Recorded temperature: {temperatures[0]:g} °C")
+    else:
+        controls[3].caption("No temperatures recorded")
 
     filtered = [
         row for row in rows
         if (selected_plastic == "All" or row["plastic_type"] == selected_plastic)
         and (selected_reactor == "All" or row["reactor_type"] == selected_reactor)
         and (selected_catalyst == "All" or row["catalyst"] == selected_catalyst)
-        and (row["temperature_c"] is None or selected_temperature[0] <= row["temperature_c"] <= selected_temperature[1])
+        and (selected_temperature is None or row["temperature_c"] is None
+             or selected_temperature[0] <= row["temperature_c"] <= selected_temperature[1])
     ]
     st.write(f"Showing {len(filtered)} of {len(rows)} experiments")
     st.dataframe(

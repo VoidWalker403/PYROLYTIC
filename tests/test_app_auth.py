@@ -39,6 +39,9 @@ def assert_locked(app):
 def test_unconfigured_app_blocks_access(config):
     # Cold imports can exceed AppTest's 3-second default on Windows.
     app = AppTest.from_file(APP, default_timeout=15)
+    # AppTest falls back to machine secrets when this mapping is empty.
+    # Keep it nonempty while omitting auth to test genuinely missing config.
+    app.secrets["test_environment"] = True
     if config is not None:
         app.secrets["auth"] = config
     app.run()
@@ -151,3 +154,17 @@ def test_live_sources_survive_reruns_and_clear_on_logout(app, monkeypatch):
     next(button for button in app.button if button.label == 'Log out').click().run()
     assert_locked(app)
     assert 'messages' not in app.session_state.filtered_state
+
+
+def test_live_failure_does_not_expose_exception_details(app, monkeypatch):
+    def fail(*args, **kwargs):
+        raise RuntimeError("private-token-and-internal-path")
+    monkeypatch.setitem(sys.modules, "retrieve", SimpleNamespace(retrieve=fail))
+    monkeypatch.setitem(sys.modules, "explain", SimpleNamespace(explain=lambda *args, **kwargs: "unused"))
+    sign_in(app)
+    app.toggle[0].set_value(False).run()
+    app.chat_input[0].set_value("Test unavailable live service").run()
+    assert not app.exception
+    response = app.session_state["messages"][-1]["content"]
+    assert "Live answers are unavailable" in response
+    assert "private-token" not in response
